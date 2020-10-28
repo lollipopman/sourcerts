@@ -70,6 +70,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// This only attachs to the ssl library in the current filesystem based on
+	// the ldconfig? How would we query for all OpenSSL libraries across all
+	// containers?  Perhaps just using `find` would suffice?
 	err = m.AttachUretprobe("ssl", "SSL_get_peer_certificate", sourcertsUretprobe, -1)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to attach return_value: %s\n", err)
