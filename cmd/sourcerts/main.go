@@ -96,7 +96,6 @@ func main() {
 	go func() {
 		var event sourcertsEvent
 		for {
-			<-channel
 			data := <-channel
 			err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &event)
 			if err != nil {
