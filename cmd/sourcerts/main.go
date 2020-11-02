@@ -16,7 +16,7 @@ const source string = `
 #include <uapi/linux/ptrace.h>
 #include <partial_x509.h>
 
-struct event_t {
+struct sourcerts_event_t {
 	u32 pid;
 	char str[80];
 } __attribute__((packed));
@@ -24,7 +24,7 @@ struct event_t {
 BPF_PERF_OUTPUT(sourcerts_events);
 
 int get_return_value(struct pt_regs *ctx) {
-	struct event_t event = {};
+	struct sourcerts_event_t event = {};
 	u32 pid;
 	X509 *certptr;
 	X509 cert;
