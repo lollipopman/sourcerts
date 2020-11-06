@@ -1,7 +1,9 @@
 #include <linux/kconfig.h>
 #include <linux/bpf.h>
 #include <uapi/linux/ptrace.h>
-#include <partial_x509.h>
+#include <bpf/bpf_helpers.h>
+#include <openssl/x509.h>
+#include <openssl/crypto/x509.h>
 
 struct sourcerts_event_t {
 	u32 pid;
