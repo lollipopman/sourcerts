@@ -3,7 +3,9 @@
 #include <linux/types.h>
 #include <uapi/linux/ptrace.h>
 
-#define X509_NAME_SIZE 1024
+#define X509_NAME_SIZE 512
+#define ASN1_STR_PRINT_SIZE 64
+#define ASN1_STR_SIZE ASN1_STR_PRINT_SIZE - 7
 
 struct sourcerts_event_t {
   u32 pid;
@@ -38,7 +40,7 @@ static __always_inline int sc_x509_name(char *output, int output_len,
   unsigned int pos = 0;
   unsigned int asn1_str_len;
   unsigned int st_len;
-  for (i = 0; i < (X509_NAME_SIZE / 66); i++) {
+  for (i = 0; i < (X509_NAME_SIZE / ASN1_STR_PRINT_SIZE); i++) {
     /* XXX combine above? */
     if (i > (st.num - 1)) {
       break;
@@ -50,7 +52,7 @@ static __always_inline int sc_x509_name(char *output, int output_len,
     bpf_probe_read(&name_tmp, sizeof(struct X509_name_entry_st),
                    (void *)name_tmp_ptr);
     bpf_probe_read(&asn1_str_tmp, sizeof(ASN1_STRING), (void *)name_tmp.value);
-    if ((unsigned int)asn1_str_tmp.length < 64) {
+    if ((unsigned int)asn1_str_tmp.length < ASN1_STR_SIZE) {
       asn1_str_len = (unsigned int)asn1_str_tmp.length;
     } else {
       bpf_trace_printk("ASN string length too long '%d'",
@@ -59,10 +61,8 @@ static __always_inline int sc_x509_name(char *output, int output_len,
     }
     bpf_trace_printk("AS1 LEN '%d'", asn1_str_len);
     bpf_trace_printk("POS '%d'", pos);
-    unsigned int rlen;
-    if (pos < (output_len - 64)) {
+    if (pos < (output_len - ASN1_STR_SIZE)) {
       /* XXX is this math right?? */
-      rlen = X509_NAME_SIZE - 1 - 64 * i;
       bpf_probe_read(output + pos, asn1_str_len & (X509_NAME_SIZE - 1),
                      (void *)asn1_str_tmp.data);
       pos += asn1_str_len;
