@@ -42,6 +42,16 @@ static __always_inline int sc_x509_name(char *output, int output_len,
   unsigned int st_len;
   for (i = 0; i < (X509_NAME_SIZE / ASN1_STR_PRINT_SIZE) && i < st.num; i++) {
     bpf_trace_printk("I '%d'", i);
+    if (i != 0) {
+      if (pos < output_len) {
+        output[pos] = ',';
+      }
+      pos++;
+      if (pos < output_len) {
+        output[pos] = ' ';
+      }
+      pos++;
+    }
     name_tmp_ptr = sc_sk_value(name_stackptr, i);
     if (!name_tmp_ptr)
       return 0;
@@ -64,16 +74,6 @@ static __always_inline int sc_x509_name(char *output, int output_len,
       bpf_trace_printk("X509_NAME_SIZE too short to fit: '%d'",
                        (unsigned int)asn1_str_tmp.length);
       return 0;
-    }
-    if ((i + 1) < st.num) {
-      if (pos < output_len) {
-        output[pos] = ',';
-      }
-      pos++;
-      if (pos < output_len) {
-        output[pos] = ' ';
-      }
-      pos++;
     }
   }
   if (pos < output_len) {
