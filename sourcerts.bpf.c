@@ -1,4 +1,5 @@
 #include <uapi/linux/ptrace.h>
+#include <linux/types.h>
 #include <partial_x509.h>
 
 struct sourcerts_event_t {
