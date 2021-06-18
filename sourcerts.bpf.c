@@ -58,10 +58,12 @@ static __always_inline int sc_x509_name(char *output, int output_len,
     bpf_trace_printk("AS1 LEN '%d'", asn1_str_len);
     bpf_trace_printk("POS '%d'", pos);
     if (pos < (output_len - ASN1_STR_SIZE)) {
-      /* XXX is this math right?? */
-      bpf_probe_read(output + pos, asn1_str_len & (X509_NAME_SIZE - 1),
-                     (void *)asn1_str_tmp.data);
+      bpf_probe_read(output + pos, asn1_str_len, (void *)asn1_str_tmp.data);
       pos += asn1_str_len;
+    } else {
+      bpf_trace_printk("X509_NAME_SIZE too short to fit: '%d'",
+                       (unsigned int)asn1_str_tmp.length);
+      return 0;
     }
     if ((i + 1) < st.num) {
       if (pos < output_len) {
