@@ -15,7 +15,7 @@ struct stack_st {
   OPENSSL_sk_compfunc comp;
 };
 
-void *sk_value(const struct stack_st *stptr, int i) {
+static __always_inline void *sc_sk_value(const struct stack_st *stptr, int i) {
   struct stack_st st;
   memcpy(&st, (void *)stptr, sizeof(struct stack_st));
   if (i < 0 || i >= st.num)
@@ -23,7 +23,8 @@ void *sk_value(const struct stack_st *stptr, int i) {
   return (void *)st.data[i];
 }
 
-int x509_name(char *output, int output_len, X509_NAME *nameptr) {
+static __always_inline int sc_x509_name(char *output, int output_len,
+                                        X509_NAME *nameptr) {
   X509_NAME name;
   memcpy(&name, (void *)nameptr, sizeof(name));
   STACK_OF(X509_NAME_ENTRY) * name_stackptr;
@@ -36,9 +37,8 @@ int x509_name(char *output, int output_len, X509_NAME *nameptr) {
   ASN1_STRING *asn1_str_tmp_ptr = NULL, asn1_str_tmp;
   int pos = 0;
   for (i = 0; i < st.num; i++) {
-    name_tmp_ptr = sk_value((const struct stack_st *)name_stackptr, i);
+    name_tmp_ptr = sc_sk_value((const struct stack_st *)name_stackptr, i);
     memcpy(&name_tmp, (void *)name_tmp_ptr, sizeof(struct X509_name_entry_st));
-    memcpy(&asn1_str_tmp, (void *)name_tmp.value, sizeof(ASN1_STRING));
     memcpy(&asn1_str_tmp, (void *)name_tmp.value, sizeof(ASN1_STRING));
     memcpy(output + pos, (void *)asn1_str_tmp.data, asn1_str_tmp.length);
     pos += asn1_str_tmp.length;
@@ -85,13 +85,13 @@ int main() {
   nameptr = cert.cert_info.subject;
   int subject_len = 200;
   char subject[subject_len];
-  x509_name(subject, subject_len, nameptr);
+  sc_x509_name(subject, subject_len, nameptr);
   printf("subject: '%s'\n", subject);
 
   nameptr = cert.cert_info.issuer;
   int issuer_len = 200;
   char issuer[issuer_len];
-  x509_name(issuer, issuer_len, nameptr);
+  sc_x509_name(issuer, issuer_len, nameptr);
   printf("issuer: '%s'\n", issuer);
 
   X509_free(certptr);
