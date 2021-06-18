@@ -14,6 +14,8 @@ struct sourcerts_event_t {
   char issuer[200];
 } __attribute__((packed));
 
+static __always_inline void perf_submit(struct sourcerts_event_t *, size_t);
+
 static __always_inline void *sc_sk_value(const struct stack_st *stptr, int i) {
   struct stack_st st;
   memcpy(&st, (void *)stptr, sizeof(struct stack_st));
@@ -58,16 +60,6 @@ static __always_inline int sc_x509_name(char *output, int output_len,
   return 0;
 }
 
-static __always_inline void perf_submit(struct sourcerts_event_t *eventptr,
-                                        size_t event_size) {
-  struct sourcerts_event_t event = {};
-  memcpy(&event, (void *)eventptr, sizeof(event));
-  printf("notBefore: %s\n", event.not_before);
-  printf("notAfter: %s\n", event.not_after);
-  printf("Subject: %s\n", event.subject);
-  printf("Subject: %s\n", event.issuer);
-}
-
 int get_return_value(X509 *certptr) {
   struct sourcerts_event_t event = {};
   X509 cert;
@@ -91,6 +83,16 @@ int get_return_value(X509 *certptr) {
 
   perf_submit(&event, sizeof(event));
   return 0;
+}
+
+static __always_inline void perf_submit(struct sourcerts_event_t *eventptr,
+                                        size_t event_size) {
+  struct sourcerts_event_t event = {};
+  memcpy(&event, (void *)eventptr, sizeof(event));
+  printf("notBefore: %s\n", event.not_before);
+  printf("notAfter: %s\n", event.not_after);
+  printf("Subject: %s\n", event.subject);
+  printf("Subject: %s\n", event.issuer);
 }
 
 int main() {
