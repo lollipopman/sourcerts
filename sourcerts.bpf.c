@@ -40,11 +40,7 @@ static __always_inline int sc_x509_name(char *output, int output_len,
   unsigned int pos = 0;
   unsigned int asn1_str_len;
   unsigned int st_len;
-  for (i = 0; i < (X509_NAME_SIZE / ASN1_STR_PRINT_SIZE); i++) {
-    /* XXX combine above? */
-    if (i > (st.num - 1)) {
-      break;
-    }
+  for (i = 0; i < (X509_NAME_SIZE / ASN1_STR_PRINT_SIZE) && i < st.num; i++) {
     bpf_trace_printk("I '%d'", i);
     name_tmp_ptr = sc_sk_value(name_stackptr, i);
     if (!name_tmp_ptr)
