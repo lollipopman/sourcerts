@@ -86,7 +86,6 @@ BPF_PERCPU_ARRAY(sourcerts_struct, struct sourcerts_event_t, 1);
 
 int get_return_value(struct pt_regs *ctx) {
   u32 map_id;
-  /* XXX why? */
   if (!PT_REGS_RC(ctx))
     return 0;
 
