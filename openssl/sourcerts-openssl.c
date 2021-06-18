@@ -7,7 +7,9 @@
 #include "sc_openssl/x509.h"
 /* #include <openssl/pem.h> */
 
-#define X509_NAME_SIZE 1024
+#define X509_NAME_SIZE 512
+#define ASN1_STR_PRINT_SIZE 64
+#define ASN1_STR_SIZE ASN1_STR_PRINT_SIZE - 7
 
 struct sourcerts_event_t {
   uint32_t pid;
@@ -44,39 +46,9 @@ static __always_inline int sc_x509_name(char *output, int output_len,
   unsigned int pos = 0;
   unsigned int asn1_str_len;
   unsigned int st_len;
-  for (i = 0; i < (X509_NAME_SIZE / 66); i++) {
-    /* XXX combine above? */
-    if (i > (st.num - 1)) {
-      break;
-    }
-    printf("I '%d'\n", i);
-    name_tmp_ptr = sc_sk_value(name_stackptr, i);
-    if (!name_tmp_ptr)
-      return 0;
-    memcpy(&name_tmp, (void *)name_tmp_ptr, sizeof(struct X509_name_entry_st));
-    memcpy(&asn1_str_tmp, (void *)name_tmp.value, sizeof(ASN1_STRING));
-    if ((unsigned int)asn1_str_tmp.length < 64) {
-      asn1_str_len = (unsigned int)asn1_str_tmp.length;
-    } else {
-      printf("ASN string length too long '%d'\n",
-             (unsigned int)asn1_str_tmp.length);
-      return 0;
-    }
-    printf("AS1 LEN '%d'\n", asn1_str_len);
-    printf("POS '%d'\n", pos);
-    unsigned int rlen;
-    if (pos < (output_len - 64)) {
-      /* XXX is this math right?? */
-      rlen = X509_NAME_SIZE - 1 - 64 * i;
-      memcpy(output + pos, (void *)asn1_str_tmp.data,
-             asn1_str_len & (X509_NAME_SIZE - 1));
-      pos += asn1_str_len;
-    }
-    /*
-     * XXX DOES NOT WORK blarg!!
-     * need to understand the bounds checking better!!
-     */
-    if ((i + 1) < st.num) {
+  for (i = 0; i < (X509_NAME_SIZE / ASN1_STR_PRINT_SIZE) && i < st.num; i++) {
+    printf("I '%d'", i);
+    if (i != 0) {
       if (pos < output_len) {
         output[pos] = ',';
       }
@@ -85,6 +57,28 @@ static __always_inline int sc_x509_name(char *output, int output_len,
         output[pos] = ' ';
       }
       pos++;
+    }
+    name_tmp_ptr = sc_sk_value(name_stackptr, i);
+    if (!name_tmp_ptr)
+      return 0;
+    memcpy(&name_tmp, (void *)name_tmp_ptr, sizeof(struct X509_name_entry_st));
+    memcpy(&asn1_str_tmp, (void *)name_tmp.value, sizeof(ASN1_STRING));
+    if ((unsigned int)asn1_str_tmp.length < ASN1_STR_SIZE) {
+      asn1_str_len = (unsigned int)asn1_str_tmp.length;
+    } else {
+      printf("ASN string length too long '%d'\n",
+             (unsigned int)asn1_str_tmp.length);
+      return 0;
+    }
+    printf("AS1 LEN '%d'", asn1_str_len);
+    printf("POS '%d'", pos);
+    if (pos < (output_len - ASN1_STR_SIZE)) {
+      memcpy(output + pos, (void *)asn1_str_tmp.data, asn1_str_len);
+      pos += asn1_str_len;
+    } else {
+      printf("X509_NAME_SIZE too short to fit: '%d'",
+             (unsigned int)asn1_str_tmp.length);
+      return 0;
     }
   }
   if (pos < output_len) {

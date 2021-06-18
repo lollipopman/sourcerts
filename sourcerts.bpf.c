@@ -41,7 +41,6 @@ static __always_inline int sc_x509_name(char *output, int output_len,
   unsigned int asn1_str_len;
   unsigned int st_len;
   for (i = 0; i < (X509_NAME_SIZE / ASN1_STR_PRINT_SIZE) && i < st.num; i++) {
-    bpf_trace_printk("I '%d'", i);
     if (i != 0) {
       if (pos < output_len) {
         output[pos] = ',';
@@ -61,17 +60,15 @@ static __always_inline int sc_x509_name(char *output, int output_len,
     if ((unsigned int)asn1_str_tmp.length < ASN1_STR_SIZE) {
       asn1_str_len = (unsigned int)asn1_str_tmp.length;
     } else {
-      bpf_trace_printk("ASN string length too long '%d'",
+      bpf_trace_printk("ASN string length too long '%d'\n",
                        (unsigned int)asn1_str_tmp.length);
       return 0;
     }
-    bpf_trace_printk("AS1 LEN '%d'", asn1_str_len);
-    bpf_trace_printk("POS '%d'", pos);
     if (pos < (output_len - ASN1_STR_SIZE)) {
       bpf_probe_read(output + pos, asn1_str_len, (void *)asn1_str_tmp.data);
       pos += asn1_str_len;
     } else {
-      bpf_trace_printk("X509_NAME_SIZE too short to fit: '%d'",
+      bpf_trace_printk("X509_NAME_SIZE too short to fit asn1 str: '%d'\n",
                        (unsigned int)asn1_str_tmp.length);
       return 0;
     }
@@ -79,7 +76,6 @@ static __always_inline int sc_x509_name(char *output, int output_len,
   if (pos < output_len) {
     output[pos] = '\0';
   }
-  bpf_trace_printk("OUTPUT '%s'", output);
   return 1;
 }
 
@@ -101,7 +97,6 @@ int get_return_value(struct pt_regs *ctx) {
   X509 *certptr, cert;
   bpf_probe_read(&cert, sizeof(cert), (void *)PT_REGS_RC(ctx));
 
-  /* cut */
   X509_VAL validity;
   ASN1_TIME *asn1_timeptr, asn1_time;
   X509_NAME *nameptr, name;
@@ -117,9 +112,12 @@ int get_return_value(struct pt_regs *ctx) {
 
   if (!sc_x509_name(event->subject, sizeof(event->subject),
                     cert.cert_info.subject)) {
-    bpf_trace_printk("ERROR");
+    bpf_trace_printk("Error returned from sc_x509_name with subject\n");
   }
-  sc_x509_name(event->issuer, sizeof(event->issuer), cert.cert_info.issuer);
+  if (!sc_x509_name(event->issuer, sizeof(event->issuer),
+                    cert.cert_info.issuer)) {
+    bpf_trace_printk("Error returned from sc_x509_name with issuer\n");
+  }
 
   sourcerts_events.perf_submit(ctx, event, sizeof(*event));
   return 0;
