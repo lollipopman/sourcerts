@@ -13,4 +13,5 @@ help: ## Show the help
 
 .PHONY: build
 build: ## build
+	pkger -o cmd/sourcerts/
 	go build -o . ./...
