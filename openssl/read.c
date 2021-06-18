@@ -1,11 +1,10 @@
-#include <crypto/x509.h>
-#include <openssl/pem.h>
-#include <openssl/safestack.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "sc_openssl/stack.h"
+#include "sc_openssl/x509.h"
+/* #include <openssl/pem.h> */
 
 struct sourcerts_event_t {
   /* asn1_time, e.g. 201020180834Z */
@@ -14,24 +13,6 @@ struct sourcerts_event_t {
   char subject[200];
   char issuer[200];
 } __attribute__((packed));
-
-struct stack_st {
-  int num;
-  const void **data;
-  int sorted;
-  int num_alloc;
-  OPENSSL_sk_compfunc comp;
-};
-
-static __always_inline void perf_submit(struct sourcerts_event_t *eventptr,
-                                        size_t event_size) {
-  struct sourcerts_event_t event = {};
-  memcpy(&event, (void *)eventptr, sizeof(event));
-  printf("notBefore: %s\n", event.not_before);
-  printf("notAfter: %s\n", event.not_after);
-  printf("Subject: %s\n", event.subject);
-  printf("Subject: %s\n", event.issuer);
-}
 
 static __always_inline void *sc_sk_value(const struct stack_st *stptr, int i) {
   struct stack_st st;
@@ -45,13 +26,13 @@ static __always_inline int sc_x509_name(char *output, int output_len,
                                         X509_NAME *nameptr) {
   X509_NAME name;
   memcpy(&name, (void *)nameptr, sizeof(name));
-  STACK_OF(X509_NAME_ENTRY) * name_stackptr;
-  name_stackptr = name.entries;
-  int num = sk_X509_NAME_ENTRY_num(name_stackptr);
+  OPENSSL_STACK *name_stackptr;
+  name_stackptr = (OPENSSL_STACK *)name.entries;
+  int num = OPENSSL_sk_num(name_stackptr);
   int i = 0;
   struct stack_st st;
   memcpy(&st, (void *)name_stackptr, sizeof(struct stack_st));
-  X509_NAME_ENTRY *name_tmp_ptr = NULL, name_tmp;
+  struct X509_name_entry_st *name_tmp_ptr = NULL, name_tmp;
   ASN1_STRING *asn1_str_tmp_ptr = NULL, asn1_str_tmp;
   int pos = 0;
   for (i = 0; i < st.num; i++) {
@@ -69,6 +50,16 @@ static __always_inline int sc_x509_name(char *output, int output_len,
     output[pos] = '\0';
   }
   return 0;
+}
+
+static __always_inline void perf_submit(struct sourcerts_event_t *eventptr,
+                                        size_t event_size) {
+  struct sourcerts_event_t event = {};
+  memcpy(&event, (void *)eventptr, sizeof(event));
+  printf("notBefore: %s\n", event.not_before);
+  printf("notAfter: %s\n", event.not_after);
+  printf("Subject: %s\n", event.subject);
+  printf("Subject: %s\n", event.issuer);
 }
 
 int get_return_value(X509 *certptr) {
