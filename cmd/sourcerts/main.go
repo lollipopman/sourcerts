@@ -15,7 +15,7 @@ import (
 	bpf "github.com/iovisor/gobpf/bcc"
 )
 
-const X509_NAME_SIZE = 1024
+const X509_NAME_SIZE = 512
 
 func init() {
 	pkger.Include("/sourcerts.bpf.c")
