@@ -15,6 +15,8 @@ import (
 	bpf "github.com/iovisor/gobpf/bcc"
 )
 
+const X509_NAME_SIZE = 1024
+
 func init() {
 	pkger.Include("/sourcerts.bpf.c")
 }
@@ -34,8 +36,11 @@ func load(filename string) (string, error) {
 }
 
 type sourcertsEvent struct {
-	Pid uint32
-	Str [80]byte
+	Pid       uint32
+	NotBefore [14]byte
+	NotAfter  [14]byte
+	Subject   [X509_NAME_SIZE]byte
+	Issuer    [X509_NAME_SIZE]byte
 }
 
 func main() {
@@ -44,7 +49,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	include, err := filepath.Abs(filepath.Join(pwd, "include"))
+	include, err := filepath.Abs(filepath.Join(pwd, "include/openssl"))
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -85,7 +90,7 @@ func main() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, os.Kill)
 
-	fmt.Printf("%10s\t%s\n", "pid", "notAfter")
+	fmt.Printf("Probing\n")
 	go func() {
 		var event sourcertsEvent
 		for {
@@ -96,13 +101,25 @@ func main() {
 				continue
 			}
 			// Convert C string (null-terminated) to Go string
-			notAfterStr := string(event.Str[:bytes.IndexByte(event.Str[:], 0)])
+			fmt.Printf("Pid: %d\n", event.Pid)
+			notBeforeStr := string(event.NotBefore[:bytes.IndexByte(event.NotBefore[:], 0)])
+			notBefore, err := time.Parse("060102150405Z", notBeforeStr)
+			if err != nil {
+				fmt.Printf("failed to parse time data '%s': %s\n", notBeforeStr, err)
+				continue
+			}
+			fmt.Printf("\tnotBefore:\t%s\n", notBefore)
+			notAfterStr := string(event.NotAfter[:bytes.IndexByte(event.NotAfter[:], 0)])
 			notAfter, err := time.Parse("060102150405Z", notAfterStr)
 			if err != nil {
 				fmt.Printf("failed to parse time data '%s': %s\n", notAfterStr, err)
 				continue
 			}
-			fmt.Printf("%10d\t%s\n", event.Pid, notAfter)
+			fmt.Printf("\tnotAfter:\t%s\n", notAfter)
+			SubjectStr := string(event.Subject[:bytes.IndexByte(event.Subject[:], 0)])
+			fmt.Printf("\tSubject:\t%s\n", SubjectStr)
+			IssuerStr := string(event.Issuer[:bytes.IndexByte(event.Issuer[:], 0)])
+			fmt.Printf("\tIssuer:\t\t%s\n", IssuerStr)
 		}
 	}()
 

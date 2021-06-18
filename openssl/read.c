@@ -19,7 +19,9 @@ static __always_inline void *sc_sk_value(const struct stack_st *stptr, int i) {
   memcpy(&st, (void *)stptr, sizeof(struct stack_st));
   if (i < 0 || i >= st.num)
     return NULL;
-  return (void *)st.data[i];
+  void *ptr;
+  memcpy(&ptr, (void *)(st.data + i), sizeof(void *));
+  return ptr;
 }
 
 static __always_inline int sc_x509_name(char *output, int output_len,
@@ -35,20 +37,24 @@ static __always_inline int sc_x509_name(char *output, int output_len,
   struct X509_name_entry_st *name_tmp_ptr = NULL, name_tmp;
   ASN1_STRING *asn1_str_tmp_ptr = NULL, asn1_str_tmp;
   int pos = 0;
+  unsigned int rlen = 0;
   for (i = 0; i < st.num; i++) {
     name_tmp_ptr = sc_sk_value((const struct stack_st *)name_stackptr, i);
+    if (!name_tmp_ptr)
+      return 0;
     memcpy(&name_tmp, (void *)name_tmp_ptr, sizeof(struct X509_name_entry_st));
     memcpy(&asn1_str_tmp, (void *)name_tmp.value, sizeof(ASN1_STRING));
     memcpy(output + pos, (void *)asn1_str_tmp.data, asn1_str_tmp.length);
-    pos += asn1_str_tmp.length;
+    rlen = (unsigned int)asn1_str_tmp.length;
+    pos += rlen;
     if ((i + 1) < st.num) {
       output[pos] = ',';
       pos++;
       output[pos] = ' ';
       pos++;
     }
-    output[pos] = '\0';
   }
+  output[pos] = '\0';
   return 0;
 }
 

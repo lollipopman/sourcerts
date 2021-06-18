@@ -1,5 +1,4 @@
 #include "sc_openssl/stack.h"
-#include <stdlib.h>
 
 typedef struct ASN1_VALUE_st ASN1_VALUE;
 typedef struct X509_algor_st X509_ALGOR;
