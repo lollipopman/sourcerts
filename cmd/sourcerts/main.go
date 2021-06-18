@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	pkger.Include("/sourcerts.bpf")
+	pkger.Include("/sourcerts.bpf.c")
 }
 
 func load(filename string) (string, error) {
@@ -49,7 +49,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	source, err := load("/sourcerts.bpf")
+	source, err := load("/sourcerts.bpf.c")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
