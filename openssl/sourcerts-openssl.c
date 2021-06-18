@@ -47,7 +47,6 @@ static __always_inline int sc_x509_name(char *output, int output_len,
   unsigned int asn1_str_len;
   unsigned int st_len;
   for (i = 0; i < (X509_NAME_SIZE / ASN1_STR_PRINT_SIZE) && i < st.num; i++) {
-    printf("I '%d'", i);
     if (i != 0) {
       if (pos < output_len) {
         output[pos] = ',';
@@ -70,13 +69,11 @@ static __always_inline int sc_x509_name(char *output, int output_len,
              (unsigned int)asn1_str_tmp.length);
       return 0;
     }
-    printf("AS1 LEN '%d'", asn1_str_len);
-    printf("POS '%d'", pos);
     if (pos < (output_len - ASN1_STR_SIZE)) {
       memcpy(output + pos, (void *)asn1_str_tmp.data, asn1_str_len);
       pos += asn1_str_len;
     } else {
-      printf("X509_NAME_SIZE too short to fit: '%d'",
+      printf("X509_NAME_SIZE too short to fit asn1 str: '%d'\n",
              (unsigned int)asn1_str_tmp.length);
       return 0;
     }
@@ -84,7 +81,6 @@ static __always_inline int sc_x509_name(char *output, int output_len,
   if (pos < output_len) {
     output[pos] = '\0';
   }
-  printf("OUTPUT '%s'\n", output);
   return 1;
 }
 
@@ -106,9 +102,12 @@ int get_return_value(X509 *certptr, struct sourcerts_event_t *event) {
 
   if (!sc_x509_name(event->subject, sizeof(event->subject),
                     cert.cert_info.subject)) {
-    printf("ERROR\n");
+    printf("Error returned from sc_x509_name with subject\n");
   }
-  sc_x509_name(event->issuer, sizeof(event->issuer), cert.cert_info.issuer);
+  if (!sc_x509_name(event->issuer, sizeof(event->issuer),
+                    cert.cert_info.issuer)) {
+    printf("Error returned from sc_x509_name with issuer\n");
+  }
 
   perf_submit(event, sizeof(&event));
   return 0;
