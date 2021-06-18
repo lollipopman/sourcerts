@@ -67,10 +67,6 @@ static __always_inline int sc_x509_name(char *output, int output_len,
                      (void *)asn1_str_tmp.data);
       pos += asn1_str_len;
     }
-    /*
-     * XXX DOES NOT WORK blarg!!
-     * need to understand the bounds checking better!!
-     */
     if ((i + 1) < st.num) {
       if (pos < output_len) {
         output[pos] = ',';
