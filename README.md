@@ -14,7 +14,7 @@ making a call to `SSL_get_peer_certificate`.
     sudo ./sourcerts
     ./tests/https_get.rb
 
-# Example Probe Data
+## Example Probe Data
 
     Pid: 1322867
         notBefore:  2021-05-24 03:58:34 +0000 UTC
